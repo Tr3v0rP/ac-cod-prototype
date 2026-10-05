@@ -8,109 +8,158 @@ export class EnemyManager {
   }
 
   initEnemies() {
-    // 5 patrol routes in courtyards, alleyways, and beneath rooftops
+    // 5 Italian Renaissance Guard Patrols
     const patrolData = [
       {
         id: 1,
-        name: "Abstergo Sentinel A",
+        name: "Florentine Halberdier A",
         waypoints: [
-          new THREE.Vector3(0, 0, 0),
-          new THREE.Vector3(0, 0, -12),
-          new THREE.Vector3(-10, 0, -12),
-          new THREE.Vector3(-10, 0, 0),
+          new THREE.Vector3(0, 0, 4),
+          new THREE.Vector3(0, 0, -10),
+          new THREE.Vector3(-8, 0, -10),
+          new THREE.Vector3(-8, 0, 4),
         ],
         speed: 1.8
       },
       {
         id: 2,
-        name: "Abstergo Sentinel B",
+        name: "Borgia Heavy Guard B",
         waypoints: [
           new THREE.Vector3(0, 0, 8),
           new THREE.Vector3(12, 0, 8),
-          new THREE.Vector3(12, 0, 20),
-          new THREE.Vector3(0, 0, 20),
+          new THREE.Vector3(12, 0, 22),
+          new THREE.Vector3(0, 0, 22),
         ],
         speed: 2.0
       },
       {
         id: 3,
-        name: "Rooftop Guard C",
+        name: "Rooftop Crossbowman C",
         waypoints: [
-          new THREE.Vector3(-16, 6, -16),
-          new THREE.Vector3(-12, 6, -20),
-          new THREE.Vector3(-20, 6, -20),
+          new THREE.Vector3(18, 7.5, -10),
+          new THREE.Vector3(18, 7.5, -16),
+          new THREE.Vector3(14, 7.5, -14),
         ],
         speed: 1.4
       },
       {
         id: 4,
-        name: "Alleyway Enforcer D",
+        name: "Loggia Sentinel D",
         waypoints: [
-          new THREE.Vector3(-26, 0, -8),
-          new THREE.Vector3(-26, 0, 15),
+          new THREE.Vector3(-20, 0, 10),
+          new THREE.Vector3(-20, 0, 25),
         ],
-        speed: 2.2
+        speed: 2.1
       },
       {
         id: 5,
-        name: "Courtyard Overseer E",
+        name: "Campanile Sentry E",
         waypoints: [
-          new THREE.Vector3(25, 0, -10),
-          new THREE.Vector3(25, 0, 10),
-          new THREE.Vector3(15, 0, 0),
+          new THREE.Vector3(0, 0, -14),
+          new THREE.Vector3(6, 0, -18),
+          new THREE.Vector3(-6, 0, -18),
         ],
         speed: 1.6
       }
     ];
 
     patrolData.forEach(data => {
-      this.createEnemy(data);
+      this.createRenaissanceGuard(data);
     });
   }
 
-  createEnemy(data) {
+  createRenaissanceGuard(data) {
     const group = new THREE.Group();
     group.position.copy(data.waypoints[0]);
 
-    // Materials
-    const armorMat = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.5, metalness: 0.4 }); // Crimson tactical armor
-    const underMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 }); // Black fatigues
-    const visorMat = new THREE.MeshBasicMaterial({ color: 0xef4444 }); // Red glow visor
+    // Authentic Renaissance Guard Materials
+    const armorSteelMat = new THREE.MeshStandardMaterial({
+      color: 0xc0c8d0, // Polished Italian plate steel
+      metalness: 0.85,
+      roughness: 0.25
+    });
+    const heraldryMat = new THREE.MeshStandardMaterial({
+      color: 0x991b1b, // Crimson Borgia/Florentine tabard
+      roughness: 0.7
+    });
+    const goldTrimMat = new THREE.MeshStandardMaterial({
+      color: 0xd97706, // Gold filigree / brass buckle
+      metalness: 0.8,
+      roughness: 0.3
+    });
+    const plumeMat = new THREE.MeshStandardMaterial({
+      color: 0xef4444, // Red feathered helmet plume
+      roughness: 0.9
+    });
+    const woodMat = new THREE.MeshStandardMaterial({
+      color: 0x451a03,
+      roughness: 0.85
+    });
 
-    // Legs
-    const legGeo = new THREE.CylinderGeometry(0.12, 0.1, 0.8, 8);
-    const legL = new THREE.Mesh(legGeo, underMat);
-    legL.position.set(-0.2, 0.4, 0);
+    // Armored Greaves / Legs
+    const legGeo = new THREE.CylinderGeometry(0.12, 0.1, 0.85, 8);
+    const legL = new THREE.Mesh(legGeo, armorSteelMat);
+    legL.position.set(-0.2, 0.42, 0);
     legL.castShadow = true;
-    const legR = new THREE.Mesh(legGeo, underMat);
-    legR.position.set(0.2, 0.4, 0);
+
+    const legR = new THREE.Mesh(legGeo, armorSteelMat);
+    legR.position.set(0.2, 0.42, 0);
     legR.castShadow = true;
 
-    // Torso
+    // Steel Cuirass (Breastplate) over Crimson Tunic
     const torsoGeo = new THREE.BoxGeometry(0.55, 0.7, 0.35);
-    const torso = new THREE.Mesh(torsoGeo, armorMat);
-    torso.position.set(0, 1.15, 0);
+    const torso = new THREE.Mesh(torsoGeo, armorSteelMat);
+    torso.position.set(0, 1.2, 0);
     torso.castShadow = true;
 
-    // Head + Tactical Helmet
-    const headGeo = new THREE.SphereGeometry(0.22, 12, 12);
-    const head = new THREE.Mesh(headGeo, armorMat);
-    head.position.set(0, 1.7, 0);
-    head.castShadow = true;
+    // Crimson Tabard Sash across chest
+    const tabardGeo = new THREE.BoxGeometry(0.57, 0.4, 0.37);
+    const tabard = new THREE.Mesh(tabardGeo, heraldryMat);
+    tabard.position.set(0, 1.15, 0);
+    group.add(tabard);
 
-    // Glowing Visor
-    const visorGeo = new THREE.BoxGeometry(0.26, 0.08, 0.12);
-    const visor = new THREE.Mesh(visorGeo, visorMat);
-    visor.position.set(0, 1.7, 0.16);
+    // Morion / Sallet Steel Helmet
+    const helmetGeo = new THREE.SphereGeometry(0.24, 12, 12);
+    const helmet = new THREE.Mesh(helmetGeo, armorSteelMat);
+    helmet.position.set(0, 1.75, 0);
+    helmet.castShadow = true;
 
-    // Weapon held
-    const gunGeo = new THREE.BoxGeometry(0.08, 0.12, 0.6);
-    const gunMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8 });
-    const gun = new THREE.Mesh(gunGeo, gunMat);
-    gun.position.set(0.25, 1.1, 0.25);
-    gun.rotation.x = 0.2;
+    // Helmet Crest / Comb
+    const combGeo = new THREE.BoxGeometry(0.04, 0.22, 0.35);
+    const comb = new THREE.Mesh(combGeo, goldTrimMat);
+    comb.position.set(0, 1.9, 0);
+    helmet.add(comb);
 
-    group.add(legL, legR, torso, head, visor, gun);
+    // Feather Plume
+    const plumeGeo = new THREE.ConeGeometry(0.06, 0.35, 6);
+    const plume = new THREE.Mesh(plumeGeo, plumeMat);
+    plume.position.set(0, 1.95, -0.15);
+    plume.rotation.x = -0.4;
+    helmet.add(plume);
+
+    // Italian Halberd (Polearm Weapon)
+    const halberdGroup = new THREE.Group();
+    // Long wooden shaft (2.2m)
+    const shaftGeo = new THREE.CylinderGeometry(0.025, 0.025, 2.2, 6);
+    const shaft = new THREE.Mesh(shaftGeo, woodMat);
+    shaft.position.y = 1.0;
+
+    // Steel Axe Blade
+    const axeGeo = new THREE.BoxGeometry(0.02, 0.35, 0.25);
+    const axe = new THREE.Mesh(axeGeo, armorSteelMat);
+    axe.position.set(0, 1.9, 0.12);
+
+    // Spear Point
+    const pointGeo = new THREE.ConeGeometry(0.05, 0.4, 6);
+    const point = new THREE.Mesh(pointGeo, armorSteelMat);
+    point.position.set(0, 2.2, 0);
+
+    halberdGroup.add(shaft, axe, point);
+    halberdGroup.position.set(0.35, 0, 0.2);
+    halberdGroup.rotation.z = -0.15;
+    halberdGroup.castShadow = true;
+
+    group.add(legL, legR, torso, helmet, halberdGroup);
     this.scene.add(group);
 
     const enemy = {
@@ -118,8 +167,8 @@ export class EnemyManager {
       name: data.name,
       mesh: group,
       torso: torso,
-      head: head,
-      gun: gun,
+      head: helmet,
+      weapon: halberdGroup,
       legL: legL,
       legR: legR,
       waypoints: data.waypoints,
@@ -127,7 +176,7 @@ export class EnemyManager {
       speed: data.speed,
       health: 100,
       maxHealth: 100,
-      state: 'PATROL', // 'PATROL', 'ALERT', 'DEAD'
+      state: 'PATROL',
       deathTimer: 0,
       animTime: Math.random() * 10,
       radius: 0.6,
@@ -140,7 +189,6 @@ export class EnemyManager {
   update(delta) {
     for (const enemy of this.enemies) {
       if (enemy.state === 'DEAD') {
-        // Fall over animation if freshly dead
         if (enemy.deathTimer < 1.0) {
           enemy.deathTimer += delta * 2.5;
           const tilt = Math.min(enemy.deathTimer, 1.0) * (Math.PI / 2);
@@ -150,7 +198,6 @@ export class EnemyManager {
         continue;
       }
 
-      // Patrol movement
       enemy.animTime += delta * 4;
       const targetWp = enemy.waypoints[enemy.currentWpIndex];
       const dir = new THREE.Vector3().subVectors(targetWp, enemy.mesh.position);
@@ -158,29 +205,24 @@ export class EnemyManager {
       const dist = dir.length();
 
       if (dist < 0.4) {
-        // Advance waypoint
         enemy.currentWpIndex = (enemy.currentWpIndex + 1) % enemy.waypoints.length;
       } else {
         dir.normalize();
         enemy.mesh.position.addScaledVector(dir, enemy.speed * delta);
         
-        // Face moving direction
         const angle = Math.atan2(dir.x, dir.z);
         enemy.mesh.rotation.y = angle;
 
-        // Walking animation
         enemy.legL.rotation.x = Math.sin(enemy.animTime) * 0.4;
         enemy.legR.rotation.x = -Math.sin(enemy.animTime) * 0.4;
       }
     }
   }
 
-  // Handle damage from shooting
   applyDamage(enemy, amount) {
     if (enemy.state === 'DEAD') return false;
     enemy.health -= amount;
 
-    // Flash hit effect
     const origColor = enemy.torso.material.color.getHex();
     enemy.torso.material.color.setHex(0xffffff);
     setTimeout(() => {
@@ -194,7 +236,6 @@ export class EnemyManager {
     return false;
   }
 
-  // Handle fatal assassination
   executeAssassination(enemy) {
     if (enemy.state === 'DEAD') return;
     this.killEnemy(enemy, 'AERIAL ASSASSINATION');
@@ -203,7 +244,6 @@ export class EnemyManager {
   killEnemy(enemy, reason) {
     enemy.state = 'DEAD';
     enemy.health = 0;
-    // Notify UI / feed
     if (window.onEnemyKilled) {
       window.onEnemyKilled(enemy.name, reason);
     }

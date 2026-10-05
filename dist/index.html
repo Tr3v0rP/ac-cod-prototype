@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AC x COD: Shadow Operative Prototype</title>
-  <script type="module" crossorigin src="./assets/index-B7A3l6gj.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-CrKuBk65.css">
+  <script type="module" crossorigin src="./assets/index-CMUxv3YE.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-CC5hri1n.css">
 </head>
 <body>
   <!-- Three.js Canvas Container -->
@@ -65,7 +65,7 @@
       </div>
       <div class="status-row">
         <span class="status-label">GUARDS:</span>
-        <span id="target-val" class="status-val">4 PATROLLING</span>
+        <span id="target-val" class="status-val">5 PATROLLING</span>
       </div>
     </div>
 
@@ -80,7 +80,11 @@
       <div class="control-line"><kbd>R-Click</kbd> / <kbd>LT</kbd> : ADS Zoom (FPS)</div>
       <div class="control-line"><kbd>R</kbd> / <kbd>X</kbd> : Reload</div>
       <div class="control-line"><kbd>E</kbd> / <kbd>Space</kbd> / <kbd>LB</kbd> : <strong>Aerial Assassinate</strong> (Airborne)</div>
-      <div class="control-line"><kbd>I</kbd> : Toggle Invert Y</div>
+      <div class="control-line"><kbd>I</kbd> : Toggle Invert Y &nbsp;|&nbsp; <kbd>O</kbd> : Toggle Invert X</div>
+      <div class="settings-row" style="margin-top: 8px; display: flex; gap: 8px;">
+        <button id="btn-toggle-inverty" class="btn-toggle">Invert Y: OFF</button>
+        <button id="btn-toggle-invertx" class="btn-toggle">Invert X: OFF</button>
+      </div>
       <div class="control-line pad-info" id="gamepad-status">🎮 Gamepad: None detected (Plug in Xbox/PS controller anytime)</div>
     </div>
 
@@ -109,7 +113,7 @@
         </div>
       </div>
 
-      <div class="btn-play">CLICK TO DEPLOY INTO DISTRICT</div>
+      <div class="btn-play" id="btn-deploy">CLICK TO DEPLOY INTO DISTRICT</div>
       <div class="sub-hint">Mouse locks for look control • Supports Xbox / PlayStation controllers natively</div>
     </div>
   </div>

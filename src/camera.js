@@ -15,8 +15,13 @@ export class DualCameraController {
     this.yaw = 0;
     this.pitch = 0;
 
-    // Invert settings (default standard non-inverted)
-    this.invertY = false;
+    // Control inversion settings
+    // In standard FPS:
+    // Moving mouse UP tilts camera UP
+    // Moving mouse DOWN tilts camera DOWN
+    // Moving mouse RIGHT turns camera RIGHT
+    // Moving mouse LEFT turns camera LEFT
+    this.invertY = false; 
     this.invertX = false;
 
     // ADS (Aim Down Sights - FPS only)
@@ -26,9 +31,6 @@ export class DualCameraController {
     // Base Offsets relative to player center
     this.fpsOffset = new THREE.Vector3(0, 1.68, 0);
     this.tpsOffset = new THREE.Vector3(0.55, 2.05, -2.6);
-
-    // Current interpolated camera position
-    this.currentOffset = new THREE.Vector3().copy(this.fpsOffset);
 
     // Sensitivity
     this.mouseSensitivity = 0.0022;
@@ -48,7 +50,7 @@ export class DualCameraController {
     this.mode = newMode;
     this.targetBlend = (this.mode === 'TPS') ? 1.0 : 0.0;
     if (this.mode === 'TPS') {
-      this.isADS = false; // Cannot ADS in TPS parkour mode
+      this.isADS = false;
     }
   }
 
@@ -60,40 +62,50 @@ export class DualCameraController {
     }
   }
 
+  toggleInvertY() {
+    this.invertY = !this.invertY;
+    return this.invertY;
+  }
+
+  toggleInvertX() {
+    this.invertX = !this.invertX;
+    return this.invertX;
+  }
+
   handleMouseMove(deltaX, deltaY) {
-    // Standard FPS controls:
-    // Move mouse RIGHT (deltaX > 0) -> Turn RIGHT (increase yaw)
-    // Move mouse LEFT  (deltaX < 0) -> Turn LEFT  (decrease yaw)
-    // Move mouse UP    (deltaY < 0) -> Look UP    (decrease pitch in Three.js Euler)
-    // Move mouse DOWN  (deltaY > 0) -> Look DOWN  (increase pitch in Three.js Euler)
-    
-    const xMult = this.invertX ? -1 : 1;
-    const yMult = this.invertY ? -1 : 1;
+    // Standard FPS Look Math:
+    // Moving mouse UP on mousepad gives deltaY < 0.
+    // In our lookDir Euler rotation, pitch < 0 points UP (Y > 0).
+    // Therefore:
+    // Normal (non-inverted): mouse UP (deltaY < 0) -> pitch decreases -> looks UP.
+    // Inverted Y: mouse UP (deltaY < 0) -> pitch increases -> looks DOWN.
+    const ySign = this.invertY ? -1 : 1;
+    const xSign = this.invertX ? -1 : 1;
 
-    this.yaw += deltaX * this.mouseSensitivity * xMult;
-    this.pitch += deltaY * this.mouseSensitivity * yMult;
+    this.yaw += deltaX * this.mouseSensitivity * xSign;
+    this.pitch += deltaY * this.mouseSensitivity * ySign;
 
-    // Clamp pitch (-85 to +85 degrees)
+    // Clamp vertical pitch (-85 to +85 degrees)
     const maxPitch = Math.PI / 2 - 0.05;
     this.pitch = Math.max(-maxPitch, Math.min(maxPitch, this.pitch));
   }
 
   handleGamepadLook(stickX, stickY, delta) {
-    const xMult = this.invertX ? -1 : 1;
-    const yMult = this.invertY ? -1 : 1;
+    const ySign = this.invertY ? -1 : 1;
+    const xSign = this.invertX ? -1 : 1;
 
     if (Math.abs(stickX) > 0.1) {
-      this.yaw += stickX * this.gamepadSensitivity * delta * xMult;
+      this.yaw += stickX * this.gamepadSensitivity * delta * xSign;
     }
     if (Math.abs(stickY) > 0.1) {
-      this.pitch += stickY * this.gamepadSensitivity * delta * yMult;
+      this.pitch += stickY * this.gamepadSensitivity * delta * ySign;
       const maxPitch = Math.PI / 2 - 0.05;
       this.pitch = Math.max(-maxPitch, Math.min(maxPitch, this.pitch));
     }
   }
 
   update(playerPos, delta, worldColliders) {
-    // Smoothstep transition between FPS and TPS
+    // Smooth transition between FPS and TPS
     const diff = this.targetBlend - this.modeBlend;
     if (Math.abs(diff) > 0.001) {
       this.modeBlend += Math.sign(diff) * Math.min(Math.abs(diff), this.blendSpeed * delta);
@@ -131,7 +143,6 @@ export class DualCameraController {
       for (const col of worldColliders) {
         const hit = camRay.intersectBox(col.box, new THREE.Vector3());
         if (hit && headPos.distanceTo(hit) < maxDist) {
-          // Push camera just in front of wall
           const safeDist = Math.max(0.3, headPos.distanceTo(hit) - 0.2);
           finalCamPos = headPos.clone().addScaledVector(camRay.direction, safeDist);
           break;
