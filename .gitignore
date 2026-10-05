@@ -1,0 +1,5 @@
+node_modules
+cloudflared
+*.zip
+*.png
+.DS_Store
