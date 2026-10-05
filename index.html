@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AC x COD: Shadow Operative Prototype</title>
+  <script type="module" crossorigin src="./assets/index-B7A3l6gj.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-CrKuBk65.css">
+</head>
+<body>
+  <!-- Three.js Canvas Container -->
+  <div id="canvas-container"></div>
+
+  <!-- Reticles & Crosshairs -->
+  <div id="crosshair-fps" class="crosshair fps-crosshair">
+    <div class="ch-center"></div>
+    <div class="ch-top"></div>
+    <div class="ch-bottom"></div>
+    <div class="ch-left"></div>
+    <div class="ch-right"></div>
+  </div>
+
+  <div id="crosshair-tps" class="crosshair tps-crosshair hidden">
+    <div class="tps-dot"></div>
+    <div class="tps-circle"></div>
+  </div>
+
+  <!-- Aerial Assassination Prompt (Appears dynamically over enemy) -->
+  <div id="assassination-prompt" class="assassination-prompt hidden">
+    <div class="prompt-icon">⚔️</div>
+    <div class="prompt-text">
+      <span class="prompt-key">[ E / LB ]</span> AERIAL ASSASSINATE
+    </div>
+    <div class="prompt-bracket"></div>
+  </div>
+
+  <!-- HUD Overlay -->
+  <div id="hud">
+    <!-- Top Mode Indicator Banner -->
+    <div id="mode-badge" class="mode-badge fps-mode">
+      <div class="mode-icon">🔫</div>
+      <div class="mode-details">
+        <span class="mode-title">COMBAT MODE</span>
+        <span class="mode-sub">FIRST PERSON • FIREARM DRAWN</span>
+      </div>
+      <div class="mode-hotkey">Press <kbd>Q</kbd> / <kbd>LB</kbd></div>
+    </div>
+
+    <!-- Ammo / Tactical Status (Bottom Right) -->
+    <div id="weapon-hud" class="weapon-hud">
+      <div id="weapon-name">M4 TACTICAL CARBINE</div>
+      <div id="ammo-display"><span id="ammo-clip">30</span> <span id="ammo-slash">/</span> <span id="ammo-reserve">120</span></div>
+      <div id="weapon-status">READY</div>
+    </div>
+
+    <!-- Parkour Traversal Status (Bottom Left) -->
+    <div id="parkour-hud" class="parkour-hud">
+      <div class="status-row">
+        <span class="status-label">TRAVERSAL:</span>
+        <span id="parkour-status" class="status-val">STANDARD</span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">HEIGHT:</span>
+        <span id="height-val" class="status-val">0.0 m</span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">GUARDS:</span>
+        <span id="target-val" class="status-val">4 PATROLLING</span>
+      </div>
+    </div>
+
+    <!-- Controls Panel (Top Left) -->
+    <div id="controls-panel">
+      <div class="panel-header">CONTROLS & HYBRID SYSTEM</div>
+      <div class="control-line"><kbd>Q</kbd> / <kbd>LB</kbd> : <strong>Switch Mode (FPS ↔ TPS)</strong></div>
+      <div class="control-line"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / <kbd>L-Stick</kbd> : Move</div>
+      <div class="control-line"><kbd>Space</kbd> / <kbd>A</kbd> : Jump / Vault / Ledge Clamber</div>
+      <div class="control-line"><kbd>Shift</kbd> / <kbd>L3</kbd> : Sprint</div>
+      <div class="control-line"><kbd>L-Click</kbd> / <kbd>RT</kbd> : Shoot (FPS) / Slash (TPS)</div>
+      <div class="control-line"><kbd>R-Click</kbd> / <kbd>LT</kbd> : ADS Zoom (FPS)</div>
+      <div class="control-line"><kbd>R</kbd> / <kbd>X</kbd> : Reload</div>
+      <div class="control-line"><kbd>E</kbd> / <kbd>Space</kbd> / <kbd>LB</kbd> : <strong>Aerial Assassinate</strong> (Airborne)</div>
+      <div class="control-line"><kbd>I</kbd> : Toggle Invert Y</div>
+      <div class="control-line pad-info" id="gamepad-status">🎮 Gamepad: None detected (Plug in Xbox/PS controller anytime)</div>
+    </div>
+
+    <!-- Kill Feed / Notifications (Top Right) -->
+    <div id="feed-container"></div>
+  </div>
+
+  <!-- Start / Pause Click Screen -->
+  <div id="blocker">
+    <div id="instructions">
+      <h1>SHADOW OPERATIVE</h1>
+      <div class="subtitle">Assassin's Creed II Parkour × Call of Duty Gunplay</div>
+      
+      <div class="feature-grid">
+        <div class="feature-box">
+          <div class="f-title">🔫 First-Person Combat</div>
+          <p>Crisp tactical shooting, ADS aim zoom, weapon recoil, and hitscan ballistics.</p>
+        </div>
+        <div class="feature-box">
+          <div class="f-title">⚔️ Third-Person Parkour (LB / Q)</div>
+          <p>Seamless camera pullback, holstered rifle, drawn assassin knife, mantle ledges, sprint across rooftops.</p>
+        </div>
+        <div class="feature-box">
+          <div class="f-title">🦅 Aerial Assassinations</div>
+          <p>Leap from rooftops above patrolling enemy guards for synchronized lethal drops.</p>
+        </div>
+      </div>
+
+      <div class="btn-play">CLICK TO DEPLOY INTO DISTRICT</div>
+      <div class="sub-hint">Mouse locks for look control • Supports Xbox / PlayStation controllers natively</div>
+    </div>
+  </div>
+
+</body>
+</html>
