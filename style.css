@@ -241,6 +241,7 @@ kbd {
 
 /* Controls Panel */
 #controls-panel {
+  pointer-events: auto;
   position: absolute;
   top: 24px;
   left: 24px;

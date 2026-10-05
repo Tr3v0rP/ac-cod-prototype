@@ -27,7 +27,7 @@ class GameApp {
 
   initScene() {
     this.scene = new THREE.Scene();
-    // Tuscan Golden Hour Sunset Sky & Atmospheric Mist
+    // Tuscan Golden Hour Sunset
     this.scene.background = new THREE.Color(0xd97736); 
     this.scene.fog = new THREE.FogExp2(0xd97736, 0.007);
 
@@ -41,14 +41,13 @@ class GameApp {
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.container.appendChild(this.renderer.domElement);
 
-    // Tuscan Renaissance Golden Hour Lighting
-    const ambientLight = new THREE.AmbientLight(0xfef3c7, 1.4); // Warm amber ambient
+    // Warm amber lighting
+    const ambientLight = new THREE.AmbientLight(0xfef3c7, 1.4);
     this.scene.add(ambientLight);
 
-    const hemiLight = new THREE.HemisphereLight(0x60a5fa, 0x78350f, 1.2); // Blue sky vs warm earth bounce
+    const hemiLight = new THREE.HemisphereLight(0x60a5fa, 0x78350f, 1.2);
     this.scene.add(hemiLight);
 
-    // Low Golden Sun
     const sunLight = new THREE.DirectionalLight(0xffedd5, 2.8);
     sunLight.position.set(65, 45, 50);
     sunLight.castShadow = true;
@@ -62,7 +61,6 @@ class GameApp {
     sunLight.shadow.camera.bottom = -70;
     this.scene.add(sunLight);
 
-    // Warm street lanterns in piazza
     const lantern1 = new THREE.PointLight(0xf59e0b, 2.5, 30);
     lantern1.position.set(0, 3.5, 5);
     this.scene.add(lantern1);
@@ -118,7 +116,19 @@ class GameApp {
       this.blocker.style.display = 'none';
     };
 
-    this.blocker.addEventListener('click', startPlay);
+    const deployBtn = document.getElementById('btn-deploy');
+    if (deployBtn) {
+      deployBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        startPlay();
+      });
+    }
+
+    this.blocker.addEventListener('click', (e) => {
+      // Don't deploy if clicking invert buttons on blocker screen
+      if (e.target.closest('.btn-toggle')) return;
+      startPlay();
+    });
 
     document.addEventListener('pointerlockchange', () => {
       if (document.pointerLockElement === document.body) {
@@ -134,28 +144,38 @@ class GameApp {
       }
     });
 
-    // Invert Settings Buttons
-    const btnInvertY = document.getElementById('btn-toggle-inverty');
-    if (btnInvertY) {
-      btnInvertY.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const active = this.cameraController.toggleInvertY();
-        btnInvertY.textContent = `Invert Y: ${active ? 'ON' : 'OFF'}`;
-        btnInvertY.classList.toggle('active', active);
-        this.ui.addNotification(`INVERT Y: ${active ? 'ON' : 'OFF'}`);
+    // Wire up all Invert Y buttons
+    const syncInvertButtons = () => {
+      const yVal = this.cameraController.invertY;
+      const xVal = this.cameraController.invertX;
+      
+      document.querySelectorAll('.btn-inverty').forEach(b => {
+        b.textContent = `Invert Y: ${yVal ? 'ON' : 'OFF'}`;
+        b.classList.toggle('active', yVal);
       });
-    }
+      document.querySelectorAll('.btn-invertx').forEach(b => {
+        b.textContent = `Invert X: ${xVal ? 'ON' : 'OFF'}`;
+        b.classList.toggle('active', xVal);
+      });
+    };
 
-    const btnInvertX = document.getElementById('btn-toggle-invertx');
-    if (btnInvertX) {
-      btnInvertX.addEventListener('click', (e) => {
+    document.querySelectorAll('.btn-inverty').forEach(b => {
+      b.addEventListener('click', (e) => {
         e.stopPropagation();
-        const active = this.cameraController.toggleInvertX();
-        btnInvertX.textContent = `Invert X: ${active ? 'ON' : 'OFF'}`;
-        btnInvertX.classList.toggle('active', active);
-        this.ui.addNotification(`INVERT X: ${active ? 'ON' : 'OFF'}`);
+        this.cameraController.toggleInvertY();
+        syncInvertButtons();
+        this.ui.addNotification(`INVERT Y: ${this.cameraController.invertY ? 'ON' : 'OFF'}`);
       });
-    }
+    });
+
+    document.querySelectorAll('.btn-invertx').forEach(b => {
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.cameraController.toggleInvertX();
+        syncInvertButtons();
+        this.ui.addNotification(`INVERT X: ${this.cameraController.invertX ? 'ON' : 'OFF'}`);
+      });
+    });
 
     window.addEventListener('resize', () => {
       this.camera.aspect = window.innerWidth / window.innerHeight;
@@ -183,14 +203,15 @@ class GameApp {
     if (this.assassination.isAssassinating) {
       this.assassination.updateExecution(delta, this.player, this.enemies);
     } else {
-      // 3. Player Movement & Parkour
+      // 3. Player Movement & Assassin Free-Climbing
       this.player.update(
         delta,
         this.input.moveVector,
         this.input.isSprinting,
         this.cameraController.yaw,
         this.cameraController.modeBlend,
-        this.world.colliders
+        this.world.colliders,
+        this.input.isDropping
       );
     }
 

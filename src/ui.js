@@ -33,7 +33,7 @@ export class UIManager {
       this.modeBadge.className = 'mode-badge tps-mode';
       this.modeIcon.textContent = '⚔️';
       this.modeTitle.textContent = 'PARKOUR MODE';
-      this.modeSub.textContent = 'THIRD PERSON • TACTICAL BLADE READY';
+      this.modeSub.textContent = 'THIRD PERSON • CLIMBING & BLADE READY';
 
       this.fpsCrosshair.classList.add('hidden');
       this.tpsCrosshair.classList.remove('hidden');
@@ -59,10 +59,8 @@ export class UIManager {
   }
 
   update(player, cameraController, weaponSystem, assassinationSystem, livingEnemyCount) {
-    // Mode sync
     const isTPS = cameraController.modeBlend > 0.5;
 
-    // Ammo update (in FPS)
     if (!isTPS) {
       this.ammoClip.textContent = weaponSystem.currentClip;
       this.ammoReserve.textContent = weaponSystem.reserveAmmo;
@@ -78,18 +76,21 @@ export class UIManager {
       }
     }
 
-    // Traversal Status
+    // Traversal Status Display
     if (assassinationSystem.isAssassinating) {
       this.parkourStatus.textContent = 'AERIAL STRIKE';
       this.parkourStatus.style.color = '#fb7185';
-    } else if (player.isMantling) {
+    } else if (player.state === 'CLIMBING') {
+      this.parkourStatus.textContent = 'WALL CLIMB (W: UP • C: DROP)';
+      this.parkourStatus.style.color = '#f59e0b';
+    } else if (player.state === 'MANTLING') {
       this.parkourStatus.textContent = 'LEDGE MANTLE';
       this.parkourStatus.style.color = '#38bdf8';
     } else if (!player.isGrounded) {
       this.parkourStatus.textContent = 'AIRBORNE';
       this.parkourStatus.style.color = '#facc15';
     } else if (player.isSprinting && player.isMoving) {
-      this.parkourStatus.textContent = isTPS ? 'FREE-RUN SPRINT' : 'TACTICAL SPRINT';
+      this.parkourStatus.textContent = isTPS ? 'AC FREE-RUN SPRINT' : 'TACTICAL SPRINT';
       this.parkourStatus.style.color = '#22c55e';
     } else if (player.isMoving) {
       this.parkourStatus.textContent = 'MOVING';
@@ -99,10 +100,7 @@ export class UIManager {
       this.parkourStatus.style.color = '#94a3b8';
     }
 
-    // Height meter
     this.heightVal.textContent = `${Math.max(0, player.position.y).toFixed(1)} m`;
-
-    // Living guards
     this.targetVal.textContent = `${livingEnemyCount} PATROLLING`;
 
     // Aerial Assassination Target HUD Bracket
@@ -118,7 +116,7 @@ export class UIManager {
   addFeedItem(victim, reason) {
     const item = document.createElement('div');
     item.className = 'feed-item';
-    item.innerHTML = `⚔️ <strong>SHADOW OPERATIVE</strong> eliminated <span style="color:#ef4444;">${victim}</span> [${reason}]`;
+    item.innerHTML = `⚔️ <strong>ASSASSIN</strong> eliminated <span style="color:#ef4444;">${victim}</span> [${reason}]`;
     this.feedContainer.appendChild(item);
 
     setTimeout(() => {

@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 
 export class InputManager {
-  constructor(domElement, onModeToggle, onAssassinateTrigger) {
+  constructor(domElement, onModeToggle, onAssassinateTrigger, cameraController) {
     this.domElement = domElement;
     this.onModeToggle = onModeToggle;
     this.onAssassinateTrigger = onAssassinateTrigger;
+    this.cameraController = cameraController;
 
     // Movement state
     this.keys = {};
@@ -13,6 +14,7 @@ export class InputManager {
     this.isJumping = false;
     this.isShooting = false;
     this.isAiming = false;
+    this.isDropping = false;
 
     // Gamepad state
     this.gamepadConnected = false;
@@ -34,14 +36,56 @@ export class InputManager {
         if (this.onModeToggle) this.onModeToggle();
       }
 
-      // E or Space : Aerial Assassinate
+      // E : Aerial Assassinate
       if (e.code === 'KeyE') {
         if (this.onAssassinateTrigger) this.onAssassinateTrigger();
       }
 
+      // Space : Jump / Climb Up / Vault
       if (e.code === 'Space') {
         this.isJumping = true;
         if (this.onAssassinateTrigger) this.onAssassinateTrigger();
+      }
+
+      // Shift / C : Drop down from climb
+      if (e.code === 'KeyC') {
+        this.isDropping = true;
+      }
+
+      // I : Toggle Invert Y
+      if (e.code === 'KeyI') {
+        if (this.cameraController) {
+          const val = this.cameraController.toggleInvertY();
+          const btn = document.getElementById('btn-toggle-inverty');
+          if (btn) {
+            btn.textContent = `Invert Y: ${val ? 'ON' : 'OFF'}`;
+            btn.classList.toggle('active', val);
+          }
+          const startBtn = document.getElementById('start-btn-inverty');
+          if (startBtn) {
+            startBtn.textContent = `Invert Y: ${val ? 'ON' : 'OFF'}`;
+            startBtn.classList.toggle('active', val);
+          }
+          if (window.onNotification) window.onNotification(`INVERT Y: ${val ? 'ON' : 'OFF'}`);
+        }
+      }
+
+      // O : Toggle Invert X
+      if (e.code === 'KeyO') {
+        if (this.cameraController) {
+          const val = this.cameraController.toggleInvertX();
+          const btn = document.getElementById('btn-toggle-invertx');
+          if (btn) {
+            btn.textContent = `Invert X: ${val ? 'ON' : 'OFF'}`;
+            btn.classList.toggle('active', val);
+          }
+          const startBtn = document.getElementById('start-btn-invertx');
+          if (startBtn) {
+            startBtn.textContent = `Invert X: ${val ? 'ON' : 'OFF'}`;
+            startBtn.classList.toggle('active', val);
+          }
+          if (window.onNotification) window.onNotification(`INVERT X: ${val ? 'ON' : 'OFF'}`);
+        }
       }
     });
 
@@ -49,6 +93,9 @@ export class InputManager {
       this.keys[e.code] = false;
       if (e.code === 'Space') {
         this.isJumping = false;
+      }
+      if (e.code === 'KeyC') {
+        this.isDropping = false;
       }
     });
   }
@@ -98,7 +145,6 @@ export class InputManager {
   }
 
   update(cameraController, onReload) {
-    // 1. Keyboard & Mouse Vector
     let forward = 0;
     let strafe = 0;
 
@@ -113,21 +159,11 @@ export class InputManager {
       onReload();
     }
 
-    // Toggle Invert Y with 'I'
-    if (this.keys['KeyI'] && !this.lastIState) {
-      cameraController.invertY = !cameraController.invertY;
-      if (window.onNotification) {
-        window.onNotification(`INVERT Y: ${cameraController.invertY ? 'ON' : 'OFF'}`);
-      }
-    }
-    this.lastIState = !!this.keys['KeyI'];
-
-    // 2. Gamepad Polling
+    // Gamepad
     const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
     const gp = gamepads[0];
 
     if (gp && gp.connected) {
-      // Left Stick (Movement)
       const stickX = gp.axes[0] || 0;
       const stickY = gp.axes[1] || 0;
       const deadzone = 0.15;
@@ -135,20 +171,18 @@ export class InputManager {
       if (Math.abs(stickX) > deadzone) strafe += stickX;
       if (Math.abs(stickY) > deadzone) forward -= stickY;
 
-      // Right Stick (Look)
       const lookX = gp.axes[2] || 0;
       const lookY = gp.axes[3] || 0;
       cameraController.handleGamepadLook(lookX, lookY, 1/60);
 
-      // Buttons
-      // Button 4: LB (Left Bumper) -> Mode Switch!
+      // LB: Mode Switch
       const lbPressed = gp.buttons[4] && gp.buttons[4].pressed;
       if (lbPressed && !this.lastLbState) {
         if (this.onModeToggle) this.onModeToggle();
       }
       this.lastLbState = lbPressed;
 
-      // Button 0: A (Xbox) / Cross (PS) -> Jump / Mantle
+      // A: Jump / Climb
       const aPressed = gp.buttons[0] && gp.buttons[0].pressed;
       if (aPressed && !this.lastJumpState) {
         this.isJumping = true;
@@ -158,28 +192,32 @@ export class InputManager {
       }
       this.lastJumpState = aPressed;
 
-      // Button 7: RT (Right Trigger) -> Shoot / Strike
+      // RT: Shoot / Strike
       const rtPressed = gp.buttons[7] && gp.buttons[7].pressed;
       this.isShooting = this.isShooting || rtPressed;
 
-      // Button 6: LT (Left Trigger) -> ADS
+      // LT: ADS
       const ltPressed = gp.buttons[6] && gp.buttons[6].pressed;
       this.isAiming = this.isAiming || ltPressed;
 
-      // Button 2: X (Xbox) -> Reload
+      // X: Reload
       const xPressed = gp.buttons[2] && gp.buttons[2].pressed;
       if (xPressed && !this.lastReloadState && onReload) {
         onReload();
       }
       this.lastReloadState = xPressed;
 
-      // Left Stick Click (L3 / Button 10) -> Sprint
+      // B: Drop from climb
+      if (gp.buttons[1] && gp.buttons[1].pressed) {
+        this.isDropping = true;
+      }
+
+      // L3: Sprint
       if (gp.buttons[10] && gp.buttons[10].pressed) {
         this.isSprinting = true;
       }
     }
 
-    // Set Three.Vector3 moveVector
     this.moveVector.set(strafe, 0, forward);
     if (this.moveVector.lengthSq() > 1.0) {
       this.moveVector.normalize();

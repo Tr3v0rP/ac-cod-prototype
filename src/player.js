@@ -13,34 +13,43 @@ export class Player {
     this.isSprinting = false;
     this.moveTime = 0;
 
-    // Parkour & Mantle state
-    this.isMantling = false;
+    // Movement States: 'NORMAL', 'CLIMBING', 'MANTLING'
+    this.state = 'NORMAL';
+
+    // Assassin's Creed Free-Climbing System
+    this.climbWall = null;        // Active building/wall collider
+    this.climbNormal = new THREE.Vector3(); // Normal of the wall face
+    this.climbSpeed = 4.2;        // Vertical scaling speed
+    this.shimmySpeed = 3.0;       // Lateral shimmy speed
+    this.climbAnimTime = 0;
+
+    // Mantle / Ledge Vault
     this.mantleStart = new THREE.Vector3();
     this.mantleTarget = new THREE.Vector3();
     this.mantleProgress = 0;
-    this.mantleDuration = 0.28;
+    this.mantleDuration = 0.26;
 
-    // Speeds
+    // Movement Speeds
     this.fpsWalkSpeed = 4.2;
-    this.fpsSprintSpeed = 6.2;
-    this.tpsRunSpeed = 5.5;
-    this.tpsSprintSpeed = 8.8; // Agile parkour sprint
-    this.jumpVelocity = 8.2;
+    this.fpsSprintSpeed = 6.4;
+    this.tpsRunSpeed = 5.8;
+    this.tpsSprintSpeed = 9.2; // High-agility AC sprint
+    this.jumpVelocity = 8.5;
     this.gravity = 24.0;
 
-    // Mesh
+    // Mesh Rig
     this.mesh = new THREE.Group();
     this.createCharacterMesh();
     this.scene.add(this.mesh);
   }
 
   createCharacterMesh() {
-    // Stylized Assassin Operative (White & Slate Coat, Red Sash, Tactical Gear)
-    const coatMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.7 }); // White/Silver Assassin tunic
-    const pantsMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 }); // Dark tactical cargo pants
-    const sashMat = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.5 }); // Crimson sash
-    const leatherMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.7 }); // Leather straps/boots
-    const steelMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.85, roughness: 0.2 }); // Hidden blade/knife
+    // Ezio / Operative Aesthetic: White tunic, crimson sash, leather bracers
+    const coatMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.7 });
+    const pantsMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+    const sashMat = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.5 });
+    const leatherMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.7 });
+    const steelMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.85, roughness: 0.2 });
 
     // Legs
     const legGeo = new THREE.CylinderGeometry(0.12, 0.1, 0.85, 8);
@@ -62,26 +71,26 @@ export class Player {
     bootR.position.set(0, -0.35, 0.05);
     this.legR.add(bootR);
 
-    // Torso / Tunic
+    // Torso / Assassin Coat
     const torsoGeo = new THREE.BoxGeometry(0.55, 0.7, 0.32);
     this.torso = new THREE.Mesh(torsoGeo, coatMat);
     this.torso.position.set(0, 1.2, 0);
     this.torso.castShadow = true;
 
-    // Crimson Assassin Waist Sash
+    // Crimson Waist Sash
     const sashGeo = new THREE.BoxGeometry(0.58, 0.16, 0.35);
     const sash = new THREE.Mesh(sashGeo, sashMat);
     sash.position.set(0, -0.28, 0);
     this.torso.add(sash);
 
-    // Assassin Hood & Head
+    // Assassin Beaked Hood
     const hoodGeo = new THREE.ConeGeometry(0.26, 0.45, 8);
     this.hood = new THREE.Mesh(hoodGeo, coatMat);
     this.hood.position.set(0, 1.82, -0.05);
     this.hood.rotation.x = -0.15;
     this.hood.castShadow = true;
 
-    // Face / Shadow inside hood
+    // Shadow face
     const faceGeo = new THREE.SphereGeometry(0.16, 8, 8);
     const faceMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
     const face = new THREE.Mesh(faceGeo, faceMat);
@@ -97,15 +106,15 @@ export class Player {
     this.armR.position.set(0.35, 1.25, 0);
     this.armR.castShadow = true;
 
-    // Holstered Rifle on Back (Visible in TPS Mode!)
+    // Back Slung Rifle (COD loadout stowed during parkour)
     this.backRifle = new THREE.Group();
     const rifleMesh = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.85, 0.14), new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8 }));
     this.backRifle.add(rifleMesh);
     this.backRifle.position.set(0.05, 0, -0.22);
-    this.backRifle.rotation.z = 0.55; // Slung diagonally across back
+    this.backRifle.rotation.z = 0.55;
     this.torso.add(this.backRifle);
 
-    // Tactical Knife in Right Hand (Drawn in TPS Mode!)
+    // Assassin Hidden Blade / Dagger in Right Hand
     this.handKnife = new THREE.Group();
     const bladeGeo = new THREE.BoxGeometry(0.02, 0.28, 0.05);
     const blade = new THREE.Mesh(bladeGeo, steelMat);
@@ -120,59 +129,146 @@ export class Player {
   }
 
   jump() {
-    if (this.isGrounded && !this.isMantling) {
+    if (this.state === 'CLIMBING') {
+      // Wall Eject / Kick off backwards
+      this.state = 'NORMAL';
+      this.velocity.copy(this.climbNormal).multiplyScalar(6.5);
+      this.velocity.y = 7.0;
+      sounds.playVault();
+      return;
+    }
+
+    if (this.isGrounded && this.state === 'NORMAL') {
       this.velocity.y = this.jumpVelocity;
       this.isGrounded = false;
       sounds.playVault();
     }
   }
 
-  // Attempt parkour ledge mantle/vault
-  tryMantle(moveDir, worldColliders) {
-    if (this.isMantling) return false;
-    if (moveDir.lengthSq() < 0.01) return false;
+  // Detect wall facing and initiate Assassin Free-Climb
+  tryGrabWall(moveDir, worldColliders) {
+    if (this.state === 'CLIMBING' || this.state === 'MANTLING') return false;
 
-    // Raycast forward from chest height (~1.2m)
-    const forward = moveDir.clone().normalize();
-    const chestOrigin = this.position.clone().add(new THREE.Vector3(0, 1.2, 0));
-    const ray = new THREE.Ray(chestOrigin, forward);
+    // Cast ray forward from chest height
+    const forward = moveDir.lengthSq() > 0.01 ? moveDir.clone().normalize() : new THREE.Vector3(0, 0, 1).applyEuler(new THREE.Euler(0, this.mesh.rotation.y, 0));
+    const chestPos = this.position.clone().add(new THREE.Vector3(0, 1.2, 0));
+    const ray = new THREE.Ray(chestPos, forward);
 
     for (const col of worldColliders) {
-      if (col.type === 'ground') continue;
-      const hit = ray.intersectBox(col.box, new THREE.Vector3());
-      if (hit && chestOrigin.distanceTo(hit) < 1.1) {
-        // Found obstacle ahead! Check if top of obstacle is reachable
-        const topY = col.box.max.y;
-        const heightDiff = topY - this.position.y;
+      if (col.type === 'ground' || col.type === 'haystack') continue;
 
-        // Mantle window: between 0.8m and 3.0m high
-        if (heightDiff >= 0.7 && heightDiff <= 3.2) {
-          this.isMantling = true;
-          this.mantleProgress = 0;
-          this.mantleStart.copy(this.position);
-          // Target landing spot on top of obstacle
-          this.mantleTarget.copy(hit).add(new THREE.Vector3(0, 0.05, 0)).addScaledVector(forward, 0.6);
-          this.mantleTarget.y = topY;
-          sounds.playVault();
-          return true;
-        }
+      const hit = ray.intersectBox(col.box, new THREE.Vector3());
+      if (hit && chestPos.distanceTo(hit) < 1.1) {
+        // Find which face of the box was hit to calculate wall normal
+        const box = col.box;
+        const normal = new THREE.Vector3();
+        const eps = 0.08;
+
+        if (Math.abs(hit.x - box.max.x) < eps) normal.set(1, 0, 0);
+        else if (Math.abs(hit.x - box.min.x) < eps) normal.set(-1, 0, 0);
+        else if (Math.abs(hit.z - box.max.z) < eps) normal.set(0, 0, 1);
+        else if (Math.abs(hit.z - box.min.z) < eps) normal.set(0, 0, -1);
+        else continue;
+
+        // If player is airborne, running at wall, or pressing jump: GRAB WALL!
+        this.state = 'CLIMBING';
+        this.climbWall = col;
+        this.climbNormal.copy(normal);
+
+        // Snap player slightly in front of wall face
+        this.position.x = hit.x + normal.x * 0.4;
+        this.position.z = hit.z + normal.z * 0.4;
+        this.velocity.set(0, 0, 0);
+
+        // Turn character to face INTO the wall
+        const faceAngle = Math.atan2(-normal.x, -normal.z);
+        this.mesh.rotation.y = faceAngle;
+
+        sounds.playVault();
+        return true;
       }
     }
     return false;
   }
 
-  update(delta, inputDir, isSprinting, cameraYaw, modeBlend, worldColliders) {
-    // Mantling animation takes priority
-    if (this.isMantling) {
+  // Handle climbing vertical scaling, lateral shimmying, and rooftop ledge vaulting
+  updateClimbing(delta, inputDir, isDropping) {
+    if (this.state !== 'CLIMBING' || !this.climbWall) return;
+
+    this.velocity.set(0, 0, 0);
+
+    // Drop off wall
+    if (isDropping) {
+      this.state = 'NORMAL';
+      this.climbWall = null;
+      this.velocity.y = -2;
+      return;
+    }
+
+    const box = this.climbWall.box;
+    const topY = box.max.y;
+
+    // Check if player has reached or scaled past the top ledge of the roof
+    if (this.position.y + 1.4 >= topY) {
+      // Reached the roof! Auto-mantle over the ledge!
+      this.state = 'MANTLING';
+      this.mantleProgress = 0;
+      this.mantleStart.copy(this.position);
+      
+      // Target position safely on top of roof
+      const pullDir = this.climbNormal.clone().negate();
+      this.mantleTarget.copy(this.position).addScaledVector(pullDir, 1.2);
+      this.mantleTarget.y = topY;
+
+      sounds.playVault();
+      return;
+    }
+
+    // Climb UP when pressing W / Forward / Up
+    let isClimbingUp = false;
+    if (inputDir.z > 0.1) {
+      this.position.y += this.climbSpeed * delta;
+      isClimbingUp = true;
+    } else if (inputDir.z < -0.1) {
+      // Climb down
+      this.position.y -= this.climbSpeed * delta;
+      if (this.position.y <= 0.1) {
+        this.state = 'NORMAL';
+        this.climbWall = null;
+      }
+    }
+
+    // Shimmy laterally along wall when pressing A / D
+    if (Math.abs(inputDir.x) > 0.1) {
+      // Lateral vector is cross product of wall normal and Up (0, 1, 0)
+      const lateral = new THREE.Vector3().crossVectors(this.climbNormal, new THREE.Vector3(0, 1, 0)).normalize();
+      this.position.addScaledVector(lateral, inputDir.x * this.shimmySpeed * delta);
+    }
+
+    // Procedural Assassin Climbing Pose (reaching arms up to grips)
+    this.climbAnimTime += delta * (isClimbingUp ? 12 : 2);
+    this.armL.rotation.x = Math.PI - 0.3 + Math.sin(this.climbAnimTime) * 0.4;
+    this.armR.rotation.x = Math.PI - 0.3 - Math.sin(this.climbAnimTime) * 0.4;
+    this.legL.rotation.x = 0.5 + Math.sin(this.climbAnimTime) * 0.3;
+    this.legR.rotation.x = 0.5 - Math.sin(this.climbAnimTime) * 0.3;
+
+    this.mesh.position.copy(this.position);
+  }
+
+  update(delta, inputDir, isSprinting, cameraYaw, modeBlend, worldColliders, isDropping) {
+    const isTPS = modeBlend > 0.5;
+
+    // 1. MANTLING STATE (Pulling up onto roof ledge)
+    if (this.state === 'MANTLING') {
       this.mantleProgress += delta / this.mantleDuration;
       const t = Math.min(1.0, this.mantleProgress);
-      // Smooth hermite step
       const smoothT = t * t * (3 - 2 * t);
       this.position.lerpVectors(this.mantleStart, this.mantleTarget, smoothT);
       this.velocity.set(0, 0, 0);
 
       if (t >= 1.0) {
-        this.isMantling = false;
+        this.state = 'NORMAL';
+        this.climbWall = null;
         this.position.copy(this.mantleTarget);
         this.isGrounded = true;
       }
@@ -180,14 +276,18 @@ export class Player {
       return;
     }
 
-    // Determine movement speed based on mode (Combat FPS vs Parkour TPS)
-    const isTPS = modeBlend > 0.5;
+    // 2. ASSASSIN FREE-CLIMBING STATE
+    if (this.state === 'CLIMBING') {
+      this.updateClimbing(delta, inputDir, isDropping);
+      return;
+    }
+
+    // 3. NORMAL MOVEMENT
     this.isSprinting = isSprinting;
-    let speed = isTPS
+    const speed = isTPS
       ? (isSprinting ? this.tpsSprintSpeed : this.tpsRunSpeed)
       : (isSprinting ? this.fpsSprintSpeed : this.fpsWalkSpeed);
 
-    // Calculate world move direction from input and camera yaw
     const moveVector = new THREE.Vector3();
     if (inputDir.lengthSq() > 0.01) {
       this.isMoving = true;
@@ -196,22 +296,18 @@ export class Player {
       const angle = cameraYaw + Math.atan2(inputDir.x, inputDir.z);
       moveVector.set(Math.sin(angle), 0, Math.cos(angle)).normalize();
 
-      // Check for parkour mantle
-      if (isTPS && (this.tryMantle(moveVector, worldColliders))) {
+      // IN PARKOUR MODE: Running into any building wall triggers Assassin Free-Climb!
+      if (isTPS && this.tryGrabWall(moveVector, worldColliders)) {
         return;
       }
     } else {
       this.isMoving = false;
     }
 
-    // Apply horizontal velocity
     this.velocity.x = moveVector.x * speed;
     this.velocity.z = moveVector.z * speed;
-
-    // Apply gravity
     this.velocity.y -= this.gravity * delta;
 
-    // Proposed new position
     const nextPos = this.position.clone().addScaledVector(this.velocity, delta);
 
     // Collision Detection against World Colliders
@@ -222,20 +318,18 @@ export class Player {
     for (const col of worldColliders) {
       const box = col.box;
 
-      // Vertical ground / rooftop landing check
+      // Vertical surface landings (Ground, Rooftops, Balconies, Haycarts)
       if (nextPos.x + playerRadius > box.min.x && nextPos.x - playerRadius < box.max.x &&
           nextPos.z + playerRadius > box.min.z && nextPos.z - playerRadius < box.max.z) {
-        // Feet landing on top of surface
-        if (this.position.y >= box.max.y - 0.25 && nextPos.y <= box.max.y) {
+        if (this.position.y >= box.max.y - 0.28 && nextPos.y <= box.max.y) {
           nextPos.y = box.max.y;
           this.velocity.y = 0;
           this.isGrounded = true;
         }
       }
 
-      // Horizontal wall collisions
+      // Horizontal Wall Collisions
       if (nextPos.y < box.max.y && nextPos.y + playerHeight > box.min.y) {
-        // Clamp X
         if (nextPos.z + playerRadius > box.min.z && nextPos.z - playerRadius < box.max.z) {
           if (this.position.x <= box.min.x - playerRadius && nextPos.x > box.min.x - playerRadius) {
             nextPos.x = box.min.x - playerRadius;
@@ -245,12 +339,11 @@ export class Player {
             this.velocity.x = 0;
           }
         }
-        // Clamp Z
         if (nextPos.x + playerRadius > box.min.x && nextPos.x - playerRadius < box.max.x) {
           if (this.position.z <= box.min.z - playerRadius && nextPos.z > box.min.z - playerRadius) {
             nextPos.z = box.min.z - playerRadius;
             this.velocity.z = 0;
-          } else if (this.position.z >= box.max.z + playerRadius && nextPos.z < box.max.z + playerRadius) {
+          } else if (this.position.z >= box.max.z + playerRadius && nextPos.x < box.max.z + playerRadius) {
             nextPos.z = box.max.z + playerRadius;
             this.velocity.z = 0;
           }
@@ -262,11 +355,8 @@ export class Player {
     this.mesh.position.copy(this.position);
 
     // Procedural animations & mode adjustments
-    // In FPS mode: hide player model to prevent camera clipping inside
-    // In TPS mode: show full character model
     this.mesh.visible = modeBlend > 0.08;
 
-    // Rotate character mesh towards movement or camera direction
     if (this.isMoving) {
       const moveAngle = Math.atan2(moveVector.x, moveVector.z);
       this.mesh.rotation.y = THREE.MathUtils.lerp(this.mesh.rotation.y, moveAngle, Math.min(1.0, 14.0 * delta));
@@ -274,7 +364,6 @@ export class Player {
       this.mesh.rotation.y = THREE.MathUtils.lerp(this.mesh.rotation.y, cameraYaw, Math.min(1.0, 10.0 * delta));
     }
 
-    // Running procedural leg swing
     if (this.isMoving && this.isGrounded) {
       const legFreq = this.isSprinting ? 16 : 10;
       this.legL.rotation.x = Math.sin(this.moveTime * legFreq) * 0.7;
@@ -288,7 +377,6 @@ export class Player {
       this.armR.rotation.x = THREE.MathUtils.lerp(this.armR.rotation.x, 0, 0.2);
     }
 
-    // In TPS mode: back rifle is holstered, knife is equipped in right hand
     this.backRifle.visible = isTPS;
     this.handKnife.visible = isTPS;
   }
